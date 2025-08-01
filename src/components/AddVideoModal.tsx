@@ -81,32 +81,52 @@ const AddVideoModal: React.FC<AddVideoModalProps> = ({ categories, onVideoAdded 
   };
 
   const handleAIAnalysis = async () => {
-    if (!formData.url) return;
+    if (!formData.url) {
+      alert('Please enter a video URL first');
+      return;
+    }
     
+    console.log('🚀 Starting AI analysis for:', formData.url);
     setAnalyzing(true);
+    
     try {
+      console.log('📞 Calling analyzeVideoFromUrl...');
       const analysis = await analyzeVideoFromUrl(formData.url);
+      console.log('✅ Analysis result:', analysis);
       
       // Find category by name if it exists
       let categoryId = formData.category_id;
       if (analysis.category) {
+        console.log('🔍 Looking for category:', analysis.category);
         const matchingCategory = categories.find(cat => 
           cat.name.toLowerCase().includes(analysis.category?.toLowerCase() || '') ||
           analysis.category?.toLowerCase().includes(cat.name.toLowerCase())
         );
         if (matchingCategory) {
+          console.log('✅ Found matching category:', matchingCategory.name);
           categoryId = matchingCategory.id;
+        } else {
+          console.log('❌ No matching category found for:', analysis.category);
         }
       }
       
+      console.log('📝 Updating form with analysis results...');
       setFormData(prev => ({
         ...prev,
         title: analysis.title || prev.title,
         description: analysis.description || prev.description,
         category_id: categoryId,
       }));
+      
+      // Show success message
+      if (analysis.confidence && analysis.reasoning) {
+        console.log(`🎯 Analysis confidence: ${analysis.confidence} - ${analysis.reasoning}`);
+        alert(`Analysis complete! Confidence: ${Math.round(analysis.confidence * 100)}%\nReasoning: ${analysis.reasoning}`);
+      }
+      
     } catch (error) {
-      console.error('Error analyzing video:', error);
+      console.error('❌ Error analyzing video:', error);
+      alert(`Analysis failed: ${error.message || 'Unknown error'}\nCheck console for details.`);
     } finally {
       setAnalyzing(false);
     }

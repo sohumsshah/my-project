@@ -127,22 +127,29 @@ async function enhanceVideoData(basicData: EnhancedVideoData): Promise<EnhancedV
 
 // Step 3: Process enhanced data with OpenAI for intelligent categorization
 async function processWithOpenAI(enhancedData: EnhancedVideoData): Promise<VideoMetadata> {
-  if (!openai.apiKey) {
+  console.log('🔑 Checking OpenAI API key...');
+  
+  if (!openai.apiKey || openai.apiKey.includes('your-openai-key')) {
+    console.log('❌ OpenAI API key not available or invalid');
     return {
       title: enhancedData.enhancedTitle || enhancedData.originalTitle || generateSmartTitle(enhancedData.url, enhancedData.platform),
-      description: enhancedData.enhancedDescription || enhancedData.originalDescription || 'AI analysis not available',
+      description: enhancedData.enhancedDescription || enhancedData.originalDescription || 'AI analysis not available - API key missing',
       category: suggestCategoryFromUrl(enhancedData.url, enhancedData.platform),
       confidence: 0.3,
-      reasoning: 'OpenAI API key not available'
+      reasoning: 'OpenAI API key not available or invalid'
     };
   }
+  
+  console.log('✅ OpenAI API key available, making API call...');
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-      {
-        role: "system",
-        content: `You are an expert video content categorization engine. Your task is to analyze video metadata and produce clean, accurate categorization results.
+  try {
+    console.log('📡 Making OpenAI API request...');
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: `You are an expert video content categorization engine. Your task is to analyze video metadata and produce clean, accurate categorization results.
 
 AVAILABLE CATEGORIES (use EXACTLY these names):
 1. Food & Cooking (prioritize for recipes, cooking tutorials, food reviews)
@@ -168,10 +175,10 @@ TASKS:
 4. Explain your reasoning based on keywords and content indicators
 
 Respond with valid JSON only.`
-      },
-      {
-        role: "user",
-        content: `Analyze this ${enhancedData.platform} video and categorize it:
+        },
+        {
+          role: "user",
+          content: `Analyze this ${enhancedData.platform} video and categorize it:
 
 ORIGINAL DATA:
 - Title: ${enhancedData.originalTitle || 'N/A'}
@@ -197,12 +204,18 @@ Provide JSON response:
   "reasoning": "Explanation of categorization based on specific keywords/indicators found",
   "tags": ["relevant", "keywords", "extracted"]
 }`
-      }
-    ],
-    max_tokens: 600,
-    temperature: 0.2,
-    response_format: { type: "json_object" }
-  });
+        }
+      ],
+      max_tokens: 600,
+      temperature: 0.2,
+      response_format: { type: "json_object" }
+    });
+    
+    console.log('✅ OpenAI API response received:', response);
+  } catch (apiError) {
+    console.error('❌ OpenAI API call failed:', apiError);
+    throw new Error(`OpenAI API failed: ${apiError.message}`);
+  }
 
   const content = response.choices[0]?.message?.content;
   if (content) {
