@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, X, Video } from 'lucide-react';
+import { Plus, X, Video, Wand2, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { analyzeVideoFromUrl } from '@/lib/openai';
 
 interface Category {
   id: string;
@@ -22,6 +23,7 @@ const AddVideoModal: React.FC<AddVideoModalProps> = ({ categories, onVideoAdded 
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     url: '',
@@ -78,6 +80,38 @@ const AddVideoModal: React.FC<AddVideoModalProps> = ({ categories, onVideoAdded 
     }));
   };
 
+  const handleAIAnalysis = async () => {
+    if (!formData.url) return;
+    
+    setAnalyzing(true);
+    try {
+      const analysis = await analyzeVideoFromUrl(formData.url);
+      
+      // Find category by name if it exists
+      let categoryId = formData.category_id;
+      if (analysis.category) {
+        const matchingCategory = categories.find(cat => 
+          cat.name.toLowerCase().includes(analysis.category?.toLowerCase() || '') ||
+          analysis.category?.toLowerCase().includes(cat.name.toLowerCase())
+        );
+        if (matchingCategory) {
+          categoryId = matchingCategory.id;
+        }
+      }
+      
+      setFormData(prev => ({
+        ...prev,
+        title: analysis.title || prev.title,
+        description: analysis.description || prev.description,
+        category_id: categoryId,
+      }));
+    } catch (error) {
+      console.error('Error analyzing video:', error);
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
   if (!isOpen) {
     return (
       <Button
@@ -120,13 +154,35 @@ const AddVideoModal: React.FC<AddVideoModalProps> = ({ categories, onVideoAdded 
 
           <div>
             <label className="block text-sm font-medium mb-2">URL *</label>
-            <Input
-              value={formData.url}
-              onChange={(e) => handleUrlChange(e.target.value)}
-              placeholder="https://..."
-              type="url"
-              required
-            />
+            <div className="flex gap-2">
+              <Input
+                value={formData.url}
+                onChange={(e) => handleUrlChange(e.target.value)}
+                placeholder="https://..."
+                type="url"
+                required
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                onClick={handleAIAnalysis}
+                disabled={!formData.url || analyzing}
+                variant="outline"
+                size="sm"
+                className="px-3 hover:bg-primary hover:text-primary-foreground transition-colors"
+              >
+                {analyzing ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Wand2 size={16} />
+                )}
+              </Button>
+            </div>
+            {analyzing && (
+              <p className="text-xs text-muted-foreground mt-1">
+                🤖 AI is analyzing the video...
+              </p>
+            )}
           </div>
 
           <div>
