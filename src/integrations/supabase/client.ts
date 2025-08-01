@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-// These would typically come from environment variables
-const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
+// Supabase configuration - using direct values for GitHub Pages deployment
+const supabaseUrl = 'https://uoptttcemrgukuvznfbx.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvcHR0dGNlbXJndWt1dnpuZmJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU2NzE0MzEsImV4cCI6MjA1MTI0NzQzMX0.CqNhvWOCcJJrWBTx2Ac6ZTILy6lttONGS_6MbK-LXrU';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {

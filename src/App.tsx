@@ -1,12 +1,13 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Index from '@/pages/Index'
+import Auth from '@/pages/Auth'
 
 function App() {
   return (
-    <Router>
+    <Router basename="/my-project">
       <Routes>
         <Route path="/" element={<Index />} />
-        <Route path="/auth" element={<div>Auth Page - To be implemented</div>} />
+        <Route path="/auth" element={<Auth />} />
       </Routes>
     </Router>
   )

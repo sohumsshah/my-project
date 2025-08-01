@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface User {
   id: string;
@@ -13,6 +15,8 @@ interface UseAuthReturn {
   user: User | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<{ error?: any }>;
+  signUpWithEmail: (email: string, password: string) => Promise<{ error?: any }>;
 }
 
 export const useAuth = (): UseAuthReturn => {
@@ -20,33 +24,87 @@ export const useAuth = (): UseAuthReturn => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Mock authentication - simulate loading and setting a user
-    const timer = setTimeout(() => {
-      setUser({
-        id: 'mock-user-id-123',
-        email: 'user@example.com',
-        user_metadata: {
-          full_name: 'John Doe',
-          avatar_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
-        }
-      });
-      setLoading(false);
-    }, 1000);
+    // Supabase is now configured directly in client.ts
 
-    return () => clearTimeout(timer);
+    // Real Supabase authentication
+    const initAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setUser({
+            id: session.user.id,
+            email: session.user.email || '',
+            user_metadata: session.user.user_metadata
+          });
+        }
+        setLoading(false);
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        setLoading(false);
+      }
+    };
+
+    initAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) {
+          setUser({
+            id: session.user.id,
+            email: session.user.email || '',
+            user_metadata: session.user.user_metadata
+          });
+        } else {
+          setUser(null);
+        }
+        setLoading(false);
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const signOut = async (): Promise<void> => {
-    // Mock sign out
-    setUser(null);
-    setLoading(false);
-    // In a real implementation, this would redirect to auth page
-    console.log('User signed out');
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+    } catch (error) {
+      console.error('Error signing out:', error);
+      // Fallback for mock mode
+      setUser(null);
+    }
+  };
+
+  const signInWithEmail = async (email: string, password: string) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      return { error };
+    } catch (error) {
+      return { error };
+    }
+  };
+
+  const signUpWithEmail = async (email: string, password: string) => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+      return { error };
+    } catch (error) {
+      return { error };
+    }
   };
 
   return {
     user,
     loading,
     signOut,
+    signInWithEmail,
+    signUpWithEmail,
   };
 };
