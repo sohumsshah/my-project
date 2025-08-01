@@ -62,14 +62,14 @@
 
 @layer components {
   .gradient-primary {
-    @apply bg-gradient-to-r from-blue-500 to-blue-600;
+    background: linear-gradient(to right, #3b82f6, #2563eb);
   }
   
   .gradient-secondary {
-    @apply bg-gradient-to-r from-indigo-500 to-purple-600;
+    background: linear-gradient(to right, #6366f1, #9333ea);
   }
   
   .gradient-accent {
-    @apply bg-gradient-to-r from-pink-500 to-rose-500;
+    background: linear-gradient(to right, #ec4899, #f43f5e);
   }
 }

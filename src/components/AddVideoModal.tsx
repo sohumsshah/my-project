@@ -24,6 +24,9 @@ const AddVideoModal: React.FC<AddVideoModalProps> = ({ categories, onVideoAdded 
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
+  
+  // Debug log to verify component is loading
+  console.log('🔧 AddVideoModal loaded with wand button functionality');
   const [formData, setFormData] = useState({
     title: '',
     url: '',
