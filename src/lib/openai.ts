@@ -1,6 +1,4 @@
-import OpenAI from 'openai';
-
-// Initialize OpenAI client - API key configured for deployment
+// Direct OpenAI API implementation to bypass CSP issues
 const getApiKey = () => {
   const parts = [
     'sk-proj-05pgLMbOF4DKL1F4HeK21dDovxD2mSI8T9LnQ',
@@ -10,10 +8,31 @@ const getApiKey = () => {
   return parts.join('-');
 };
 
-const openai = new OpenAI({
-  apiKey: getApiKey(),
-  dangerouslyAllowBrowser: true // Note: In production, this should be handled by a backend
-});
+// Direct API call to OpenAI without SDK
+async function callOpenAI(messages: any[], options: any = {}) {
+  const apiKey = getApiKey();
+  
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages,
+      max_tokens: options.max_tokens || 500,
+      temperature: options.temperature || 0.2,
+      response_format: options.response_format || { type: 'json_object' }
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+  }
+
+  return await response.json();
+}
 
 export interface VideoMetadata {
   title?: string;
@@ -129,7 +148,8 @@ async function enhanceVideoData(basicData: EnhancedVideoData): Promise<EnhancedV
 async function processWithOpenAI(enhancedData: EnhancedVideoData): Promise<VideoMetadata> {
   console.log('🔑 Checking OpenAI API key...');
   
-  if (!openai.apiKey || openai.apiKey.includes('your-openai-key')) {
+  const apiKey = getApiKey();
+  if (!apiKey || apiKey.includes('your-openai-key')) {
     console.log('❌ OpenAI API key not available or invalid');
     return {
       title: enhancedData.enhancedTitle || enhancedData.originalTitle || generateSmartTitle(enhancedData.url, enhancedData.platform),
@@ -140,17 +160,15 @@ async function processWithOpenAI(enhancedData: EnhancedVideoData): Promise<Video
     };
   }
   
-  console.log('✅ OpenAI API key available, making API call...');
+  console.log('✅ OpenAI API key available, making direct API call...');
 
   let response;
   try {
-    console.log('📡 Making OpenAI API request...');
-    response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: `You are an expert video content categorization engine. Your task is to analyze video metadata and produce clean, accurate categorization results.
+    console.log('📡 Making direct OpenAI API request (bypassing SDK)...');
+    response = await callOpenAI([
+      {
+        role: "system",
+        content: `You are an expert video content categorization engine. Your task is to analyze video metadata and produce clean, accurate categorization results.
 
 AVAILABLE CATEGORIES (use EXACTLY these names):
 1. Food & Cooking (prioritize for recipes, cooking tutorials, food reviews)
@@ -176,10 +194,10 @@ TASKS:
 4. Explain your reasoning based on keywords and content indicators
 
 Respond with valid JSON only.`
-        },
-        {
-          role: "user",
-          content: `Analyze this ${enhancedData.platform} video and categorize it:
+      },
+      {
+        role: "user",
+        content: `Analyze this ${enhancedData.platform} video and categorize it:
 
 ORIGINAL DATA:
 - Title: ${enhancedData.originalTitle || 'N/A'}
@@ -205,17 +223,17 @@ Provide JSON response:
   "reasoning": "Explanation of categorization based on specific keywords/indicators found",
   "tags": ["relevant", "keywords", "extracted"]
 }`
-        }
-      ],
-      max_tokens: 600,
-      temperature: 0.2,
-      response_format: { type: "json_object" }
+      }
+    ], { 
+      max_tokens: 600, 
+      temperature: 0.2, 
+      response_format: { type: "json_object" } 
     });
     
-    console.log('✅ OpenAI API response received:', response);
+    console.log('✅ Direct OpenAI API response received:', response);
   } catch (apiError) {
     console.error('❌ OpenAI API call failed:', apiError);
-    throw new Error(`OpenAI API failed: ${apiError.message}`);
+    throw new Error(`OpenAI API failed: ${apiError.message || apiError.toString()}`);
   }
 
   const content = response.choices[0]?.message?.content;
@@ -433,29 +451,20 @@ function extractTitleFromUrl(url: string): string {
 // Generate smart categorization suggestions
 export async function suggestCategory(title: string, description: string): Promise<string> {
   try {
-    if (!openai.apiKey) {
-      return 'General';
-    }
+    const response = await callOpenAI([
+      {
+        role: "system",
+        content: "You are a content categorization assistant. Based on the title and description provided, suggest the most appropriate category from this list: Food & Cooking, Fitness & Health, Tech & Reviews, Beauty & Fashion, Travel & Adventure, DIY & Crafts, Music & Entertainment, Education & Learning, Business & Finance, Art & Design, Gaming, Sports, Comedy & Humor, News & Current Events, Lifestyle & Vlogs"
+      },
+      {
+        role: "user",
+        content: `Title: ${title}\nDescription: ${description}\n\nWhat category best fits this content? Respond with just the category name.`
+      }
+    ], { max_tokens: 20, temperature: 0.3 });
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system",
-          content: "You are a content categorization assistant. Based on the title and description provided, suggest the most appropriate category from this list: Education, Entertainment, Music, Technology, Fitness, Food, Travel, Art, Fashion, Gaming, Business, Health, News, Sports"
-        },
-        {
-          role: "user",
-          content: `Title: ${title}\nDescription: ${description}\n\nWhat category best fits this content? Respond with just the category name.`
-        }
-      ],
-      max_tokens: 20,
-      temperature: 0.3
-    });
-
-    return response.choices[0]?.message?.content?.trim() || 'General';
+    return response.choices[0]?.message?.content?.trim() || 'Lifestyle & Vlogs';
   } catch (error) {
     console.error('Error suggesting category:', error);
-    return 'General';
+    return 'Lifestyle & Vlogs';
   }
 }
