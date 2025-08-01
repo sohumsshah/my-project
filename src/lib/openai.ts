@@ -142,9 +142,10 @@ async function processWithOpenAI(enhancedData: EnhancedVideoData): Promise<Video
   
   console.log('✅ OpenAI API key available, making API call...');
 
+  let response;
   try {
     console.log('📡 Making OpenAI API request...');
-    const response = await openai.chat.completions.create({
+    response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
