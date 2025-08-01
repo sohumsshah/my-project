@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 
 // Supabase configuration - using direct values for GitHub Pages deployment
 const supabaseUrl = 'https://uoptttcemrgukuvznfbx.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvcHR0dGNlbXJndWt1dnpuZmJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU2NzE0MzEsImV4cCI6MjA1MTI0NzQzMX0.CqNhvWOCcJJrWBTx2Ac6ZTILy6lttONGS_6MbK-LXrU';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvcHR0dGNlbXJndWt1dnpuZmJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQwMDM4NDUsImV4cCI6MjA2OTU3OTg0NX0.Xow28Ha04y_tr1MlF3TLo7Anss5Div6U38s2rWV1GHQ';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
